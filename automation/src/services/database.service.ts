@@ -10,6 +10,24 @@ export type TournamentRecord = RowDataPacket & {
   points_loss: number;
 };
 
+export type MatchRecord = RowDataPacket & {
+  id: string;
+  round: number;
+  contestant_a_id: string;
+  contestant_b_id: string;
+  outcome: string;
+  score_json: unknown;
+};
+
+export type StandingRecord = RowDataPacket & {
+  name: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  points: number;
+};
+
 export class DatabaseService {
   private pool?: Pool;
 
@@ -53,6 +71,36 @@ export class DatabaseService {
     return Number(rows[0]?.count ?? 0);
   }
 
+  async match(matchId: string): Promise<MatchRecord | undefined> {
+    const [rows] = await this.connection().execute<MatchRecord[]>(
+      `SELECT id, round, contestant_a_id, contestant_b_id, outcome, score_json
+         FROM matches WHERE id = ?`,
+      [matchId],
+    );
+    return rows[0];
+  }
+
+  async matchesInRound(tournamentId: string, round: number): Promise<MatchRecord[]> {
+    const [rows] = await this.connection().execute<MatchRecord[]>(
+      `SELECT id, round, contestant_a_id, contestant_b_id, outcome, score_json
+         FROM matches WHERE tournament_id = ? AND round = ? ORDER BY id`,
+      [tournamentId, round],
+    );
+    return rows;
+  }
+
+  async standings(tournamentId: string): Promise<StandingRecord[]> {
+    const [rows] = await this.connection().execute<StandingRecord[]>(
+      `SELECT c.name, s.played, s.won, s.drawn, s.lost, s.points
+         FROM standings s
+         JOIN contestants c ON c.id = s.contestant_id
+        WHERE s.tournament_id = ?
+        ORDER BY c.name`,
+      [tournamentId],
+    );
+    return rows;
+  }
+
   async cleanupTournament(name: string): Promise<void> {
     const tournament = await this.findTournament(name);
     if (!tournament || !name.startsWith("SDET-")) return;
@@ -61,6 +109,7 @@ export class DatabaseService {
     try {
       await connection.beginTransaction();
       await connection.execute("DELETE FROM matches WHERE tournament_id = ?", [tournament.id]);
+      await connection.execute("DELETE FROM standings WHERE tournament_id = ?", [tournament.id]);
       await connection.execute("DELETE FROM contestants WHERE tournament_id = ?", [tournament.id]);
       await connection.execute("DELETE FROM tournaments WHERE id = ?", [tournament.id]);
       await connection.commit();

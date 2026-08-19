@@ -17,7 +17,12 @@ The compact suite covers:
 
 - table tournament creation with UI and database verification;
 - required-name validation with a database no-write assertion;
-- prevention of self-matches in rating tournaments.
+- prevention of self-matches in rating tournaments;
+- table scoring, persisted outcomes and exactly-once standings updates;
+- duplicate-score conflict protection and unchanged state;
+- knockout semifinal-to-final progression;
+- schema-driven Tennis score boundaries and rejected invalid input;
+- focused `404` and `409` API contract behaviour.
 
 ### Install and run
 
@@ -29,17 +34,19 @@ npm install
 npx playwright install chromium
 npm run typecheck
 npm test
+npm run report
 ```
 
 Run only the fast end-to-end smoke scenario with `npm run test:smoke`. Set
 `HEADLESS=false` in `.env` or use `npm run test:headed` when debugging.
 
 Reports are generated under `reports/` in HTML, JSON and JUnit formats. A
-full-page screenshot is embedded in the Cucumber report when a scenario fails.
+full-page screenshot and Playwright trace are captured when a scenario fails.
 Local credentials belong in `.env`; only the safe template is committed.
 
 See [TEST_STRATEGY.md](TEST_STRATEGY.md) for scope, design decisions and known
-limitations.
+limitations, and [FINDINGS.md](FINDINGS.md) for observations separated from
+confirmed defects.
 
 ## Prerequisites
 

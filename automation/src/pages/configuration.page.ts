@@ -13,12 +13,16 @@ export class ConfigurationPage {
 
   async createTournament(input: {
     name?: string;
+    sport?: string;
     format: TournamentFormat;
     contestants: string[];
     points?: { win: number; draw: number; loss: number };
   }): Promise<void> {
     if (input.name !== undefined) {
       await this.field("Tournament name").locator("input").fill(input.name);
+    }
+    if (input.sport) {
+      await this.field("Sport").locator("select").selectOption({ label: input.sport });
     }
     await this.field("Format").locator("select").selectOption(input.format);
 

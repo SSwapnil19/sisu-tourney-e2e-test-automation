@@ -25,3 +25,34 @@ Feature: Tournament management
     Then match creation is disabled with a clear explanation
     And no new rating match is stored
 
+  @scoring @database
+  Scenario: A table winner receives the configured points
+    Given I have unique tournament test data
+    And a table tournament exists with 4 contestants
+    When I submit a valid winning score for the first pending match
+    Then the score and winner are stored correctly
+    And the table standings are updated exactly once in the UI and database
+
+  @scoring @integrity @api
+  Scenario: A decided table match cannot be scored twice
+    Given I have unique tournament test data
+    And a table match has already been scored
+    When I submit a second score for the decided match through the API
+    Then the API rejects the duplicate score with conflict status
+    And the original result and standings remain unchanged
+
+  @knockout @database
+  Scenario: Knockout semifinal winners progress to the final
+    Given I have unique tournament test data
+    And a knockout tournament exists with 4 contestants
+    When I score both semifinal matches
+    Then the final contains exactly the two semifinal winners
+
+  @validation @boundary @database
+  Scenario: Tennis score values below the schema minimum are rejected
+    Given I have unique tournament test data
+    And a table tournament exists with 4 contestants
+    When I enter a tennis score below the minimum value
+    Then the score input exposes the Tennis schema boundaries 0 and 7
+    And browser schema validation prevents score submission
+    And the selected match remains pending without a stored score

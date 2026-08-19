@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "test": "node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js",
+    "test:dry": "node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js --dry-run",
     "test:smoke": "node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js --tags '@smoke'",
     "test:headed": "HEADLESS=false node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js",
     "typecheck": "tsc --noEmit",
-    "report": "node scripts/report-summary.mjs"
+    "report": "node scripts/report-summary.mjs",
+    "verify": "npm run typecheck && npm test && npm run report"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^11.3.0",

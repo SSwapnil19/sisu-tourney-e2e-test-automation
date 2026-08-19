@@ -14,6 +14,16 @@ highest-value behaviour across the complete system boundary:
 User action in UI -> API processing -> MySQL state -> Updated user outcome
 ```
 
+### Reviewer summary
+
+Nine focused scenarios automate the highest-risk creation, validation, table
+scoring, duplicate protection, knockout progression, score-boundary and API
+error paths. They use the UI for user behaviour, direct API calls for contract
+edges, and MySQL for independent business-state verification. All 9 scenarios
+and 38 steps pass against the supplied Docker system. Remaining priorities are
+knockout byes, valid rating updates and language switching. Environment and
+contract observations are recorded separately in `FINDINGS.md`.
+
 ## 2. Application and business flow
 
 The system has two user-facing React applications:
@@ -91,20 +101,20 @@ large suites containing many low-value variations of the same journey.
 
 ## 4. Ten important business scenarios
 
-The first three scenarios are currently automated. The remaining seven are the
-recommended next coverage in business-risk order. Planned scenarios are not
-reported as passing tests.
+Seven of the ten core business scenarios are automated. Three deliberately
+remain as visible next coverage; planned scenarios are not reported as passing.
+Two additional API `404` contract scenarios bring the executable total to nine.
 
 | # | Priority | Business scenario | Status |
 |---|---|---|---|
 | 1 | P0 | Create a table tournament and verify persistence | Automated and passing |
 | 2 | P0 | Prevent tournament creation without a name | Automated and passing |
 | 3 | P0 | Prevent a rating contestant playing themselves | Automated and passing |
-| 4 | P0 | Score a table match and update standings | Planned |
-| 5 | P0 | Reject a second score for an already decided match | Planned |
-| 6 | P0 | Progress the correct knockout winner | Planned |
+| 4 | P0 | Score a table match and update standings | Automated and passing |
+| 5 | P0 | Reject a second score for an already decided match | Automated and passing |
+| 6 | P0 | Progress the correct knockout winner | Automated and passing |
 | 7 | P1 | Handle a non-power-of-two knockout using byes | Planned investigation |
-| 8 | P1 | Enforce minimum, maximum and required score values | Planned |
+| 8 | P1 | Enforce minimum, maximum and required score values | Partially automated: schema bounds and below-minimum rejection |
 | 9 | P1 | Create and score a valid rating match | Planned |
 | 10 | P2 | Preserve behaviour when switching French and English | Planned |
 
@@ -348,7 +358,7 @@ Each run creates:
 - `reports/cucumber-report.html` for reviewer-friendly results.
 - `reports/cucumber-report.json` for result processing.
 - `reports/cucumber-report.xml` for CI systems.
-- A full-page screenshot attached to a failed scenario.
+- A full-page screenshot and Playwright trace attached to a failed scenario.
 
 When a test fails, investigation follows the same system boundary as the user
 journey:
@@ -363,9 +373,9 @@ business logic or persistence layer.
 ## 11. Execution evidence
 
 The framework was type-checked and executed against the complete Docker
-application on 19 August 2026. All three automated scenarios and all fourteen
-business steps passed, including live MySQL assertions and transactional
-cleanup.
+application on 19 August 2026. All nine automated scenarios and all 38 steps
+passed in 34 seconds, including live UI, API and MySQL assertions plus
+transactional cleanup across matches, standings, contestants and tournaments.
 
 The supplied API image is ARM64 while the assessment machine is Intel AMD64;
 Docker Desktop emitted a platform warning and ran it through emulation. The
@@ -373,27 +383,25 @@ machine also had an unrelated MySQL server on host port 3306, so the assessment
 database was exposed locally on port 3307 through an uncommitted Compose
 override. Neither condition required a product-code change.
 
-## 12. Most important areas for improvement
+## 12. Priority improvements delivered and remaining
 
-The current solution provides a reliable framework and three passing scenarios,
-but the following improvements would provide stronger evidence for a senior
-SDET assessment. They are listed in recommended implementation order.
+The requested review priorities were applied as follows. Each item distinguishes
+completed evidence from intentionally remaining scope.
 
-### 1. Automate table scoring and standings
+### 1. Table scoring and standings — completed
 
-The suite creates table tournaments but does not yet prove the main table
-business outcome. Add a scenario that submits a valid match score and verifies:
+The scoring scenario submits a valid Tennis result and verifies:
 
 - The raw score and outcome stored in `matches`.
 - Played, won and lost counts.
 - Configured win/loss points rather than hard-coded `3/0` values.
 - Agreement between UI standings and MySQL standings.
 
-This is the highest-value missing user journey.
+This covers the main table-format business outcome.
 
-### 2. Protect against duplicate score processing
+### 2. Duplicate score protection — completed
 
-Add a scenario that submits a result twice and proves:
+The duplicate scenario submits a result twice and proves:
 
 - The first result succeeds.
 - The second submission is rejected as a conflict.
@@ -402,68 +410,60 @@ Add a scenario that submits a result twice and proves:
 
 This directly covers repeated actions, retries and data integrity.
 
-### 3. Automate knockout progression
+### 3. Knockout progression — completed for four contestants
 
-Add a four-contestant knockout scenario that verifies the first-round winner is
-placed in the correct next-round match and the loser does not progress. After
-the basic flow is reliable, investigate non-power-of-two contestant counts and
-automatic byes.
+A four-contestant knockout scenario verifies that both first-round winners are
+the two contestants in the generated final. Non-power-of-two counts and
+automatic byes remain planned because the UI and OpenAPI disagree on support.
 
-### 4. Add score-schema boundary coverage
+### 4. Score-schema boundaries — partially completed
 
-Exercise the schema-driven form using minimum, maximum, below-minimum,
-above-maximum and incomplete scores. Rejected input must leave the match pending
-and must not cause standings, rating or bracket changes.
+The test proves the generated Tennis input exposes schema bounds `0..7`, rejects
+`-1`, and leaves the match pending without a stored score. Above-maximum and
+incomplete multi-set payloads remain focused next cases.
 
-### 5. Add focused API contract tests
+### 5. API contract tests — completed for selected `404` and `409` paths
 
-The current application readiness check uses `/health`, but business API errors
-are not automated. Add focused checks for:
+The suite checks unknown tournament and match IDs (`404`) and duplicate scoring
+(`409`) while `/health` remains the readiness gate. Remaining contract cases are:
 
-- Unknown tournament and match IDs (`404`).
-- Already-decided matches (`409`).
 - Rejected score payloads (`422`).
 - Rating-match creation, which is used by the UI but absent from OpenAPI.
 
 API checks should complement the end-user journeys rather than replace them.
 
-### 6. Add continuous integration
+### 6. CI integration — completed
 
-Create a CI workflow that installs dependencies, starts the Docker application,
-waits for health, runs type checking and tests, uploads reports, and always
-stops the environment. If the supplied API archive cannot be stored in hosted
-CI, document a self-hosted runner or secure image-registry prerequisite.
+The GitHub Actions workflow installs dependencies and Chromium, enables ARM
+emulation, starts the Docker application, waits for health, runs verification,
+uploads reports, and always stops the environment.
 
-### 7. Verify cleanup against every related table
+### 7. Cleanup across related tables — completed
 
-The live schema also contains `standings`. Before score tests are added, inspect
-its foreign keys and confirm whether transactional cleanup must delete standings
-explicitly or whether database cascades are sufficient. Cleanup must remain
-restricted to scenario-owned `SDET-` records.
+Transactional teardown deletes matches, standings, contestants and then the
+tournament in foreign-key-safe order. It is restricted to scenario-owned
+`SDET-` records and runs after success or failure.
 
-### 8. Strengthen failure diagnostics
+### 8. Better failure diagnostics — completed
 
-Retain screenshots and add Playwright traces for failed scenarios where useful.
-Failure messages should describe the incorrect business result, and the test
-command should be confirmed to return a non-zero exit code whenever any
-scenario fails.
+Failed scenarios attach a full-page screenshot and retain a Playwright trace.
+Business assertions include relevant IDs and observed values, and Cucumber
+returns a non-zero exit code on failure.
 
-### 9. Record findings separately from confirmed defects
+### 9. Findings versus confirmed defects — completed
 
-Add a concise findings table covering:
+A separate `FINDINGS.md` table records:
 
 - UI knockout-size guidance versus OpenAPI bye support.
 - The rating-match endpoint missing from OpenAPI.
 - The supplied ARM64 API image running on an Intel host through emulation.
 
-Each entry should distinguish observed evidence, business impact, assumption
-and clarification required. An ambiguity should not be labelled a defect until
-the intended behaviour is confirmed.
+Each entry distinguishes observed evidence, impact and classification. The
+knockout ambiguity is not labelled a product defect without clarification.
 
-### 10. Keep the reviewer summary concise
+### 10. Concise reviewer summary — completed
 
-Maintain this detailed strategy as engineering evidence, but place a short
-executive summary near the top of the submission stating:
+The summary near the top states:
 
 - What is automated.
 - Why those scenarios were selected.
