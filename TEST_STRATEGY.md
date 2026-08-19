@@ -42,14 +42,17 @@ Configuration is read from `.env`. `.env` and generated reports are ignored by
 Git; `.env.example` contains only the local credentials supplied with the
 exercise. No tokens or credentials are embedded in test code.
 
-## Known execution limitation
+## Execution evidence
 
-The framework was type-checked and all three Gherkin scenarios were dry-run
-successfully in the assessment workspace. The supplied Docker application
-could not be executed here because the host has no Docker CLI. Run the documented
-Docker commands locally, inspect the actual MySQL schema, and execute `npm test`
-before submission. Any schema difference discovered at that point should be
-handled in the database service rather than leaking SQL into steps or tests.
+The framework was type-checked and executed against the complete Docker
+application on 19 August 2026. All three scenarios and all fourteen business
+steps passed, including live MySQL assertions and transactional cleanup.
+
+The supplied API image is ARM64 while the assessment machine is Intel AMD64;
+Docker Desktop emitted a platform warning and ran it through emulation. The
+machine also had an unrelated MySQL server on host port 3306, so the assessment
+database was exposed locally on port 3307 through an uncommitted Compose
+override. Neither condition required a product-code change.
 
 ## Next tests
 

@@ -36,6 +36,9 @@ export class ConfigurationPage {
       await contestantInputs.nth(index).fill(contestant);
     }
     await this.page.getByRole("button", { name: "Create", exact: true }).click();
+    if (input.name) {
+      await expect(this.tournamentRow(input.name)).toBeVisible();
+    }
   }
 
   tournamentRow(name: string) {
@@ -56,4 +59,3 @@ export class ConfigurationPage {
     return this.page.locator(".field").filter({ hasText: label }).locator('input[type="number"]');
   }
 }
-
