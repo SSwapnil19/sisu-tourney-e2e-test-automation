@@ -1,5 +1,12 @@
 import { mkdir } from "node:fs/promises";
-import { After, Before, Status, setDefaultTimeout } from "@cucumber/cucumber";
+import {
+  After,
+  AfterStep,
+  Before,
+  BeforeStep,
+  Status,
+  setDefaultTimeout,
+} from "@cucumber/cucumber";
 import { chromium, firefox, webkit, type BrowserType } from "@playwright/test";
 import { environment } from "../config/environment.js";
 import { ConfigurationPage } from "../pages/configuration.page.js";
@@ -15,7 +22,8 @@ setDefaultTimeout(environment.timeoutMs);
 
 const browsers: Record<string, BrowserType> = { chromium, firefox, webkit };
 
-Before(async function (this: TestWorld) {
+Before(async function (this: TestWorld, scenario) {
+  console.log(`\n[SCENARIO START] ${scenario.pickle.name}`);
   this.application = new ApplicationService(
     environment.apiUrl,
     environment.configUiUrl,
@@ -41,6 +49,21 @@ Before(async function (this: TestWorld) {
   this.verifier = new TournamentVerifier(this.database, this.configuration, this.matchEntry);
 });
 
+BeforeStep(function (this: TestWorld, { pickleStep }) {
+  this.stepStartedAt = Date.now();
+  console.log(`[STEP START] ${pickleStep.text}`);
+});
+
+AfterStep(function (this: TestWorld, { pickleStep, result }) {
+  const durationMs = this.stepStartedAt ? Date.now() - this.stepStartedAt : 0;
+  const status = result?.status ?? Status.UNKNOWN;
+  console.log(`[STEP ${status}] ${pickleStep.text} (${durationMs} ms)`);
+
+  if (status === Status.FAILED && result?.message) {
+    console.error(`[STEP ERROR] ${result.message.split("\n", 1)[0]}`);
+  }
+});
+
 After(async function (this: TestWorld, scenario) {
   const scenarioSlug = scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   const capturesEvidence = scenario.pickle.tags.some(({ name }) => name === "@evidence");
@@ -64,4 +87,5 @@ After(async function (this: TestWorld, scenario) {
   if (this.data) await this.database.cleanupTournament(this.data.name);
   await this.database?.disconnect();
   await this.context?.browser()?.close();
+  console.log(`[SCENARIO ${scenario.result?.status ?? Status.UNKNOWN}] ${scenario.pickle.name}`);
 });

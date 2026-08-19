@@ -6,7 +6,7 @@ module.exports = {
       "automation/src/steps/**/*.ts"
     ],
     format: [
-      "progress-bar",
+      "summary",
       "html:reports/cucumber-report.html",
       "json:reports/cucumber-report.json",
       "junit:reports/cucumber-report.xml"

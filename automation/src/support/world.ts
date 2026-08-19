@@ -26,6 +26,7 @@ export class TestWorld extends World {
   matchId?: string;
   apiResult?: ApiResult;
   standingsBefore?: StandingRecord[];
+  stepStartedAt?: number;
 
   constructor(options: IWorldOptions) {
     super(options);
