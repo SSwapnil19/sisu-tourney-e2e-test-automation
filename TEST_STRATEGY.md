@@ -373,8 +373,8 @@ business logic or persistence layer.
 ## 11. Execution evidence
 
 The framework was type-checked and executed against the complete Docker
-application on 19 August 2026. All nine automated scenarios and all 38 steps
-passed in 34 seconds, including live UI, API and MySQL assertions plus
+application on 20 August 2026. All nine automated scenarios and all 38 steps
+passed in 49 seconds, including live UI, API and MySQL assertions plus
 transactional cleanup across matches, standings, contestants and tournaments.
 
 The supplied API image is ARM64 while the assessment machine is Intel AMD64;
@@ -383,7 +383,27 @@ machine also had an unrelated MySQL server on host port 3306, so the assessment
 database was exposed locally on port 3307 through an uncommitted Compose
 override. Neither condition required a product-code change.
 
-## 12. Priority improvements delivered and remaining
+## 12. Successful scenario demo
+
+The screenshots below were captured automatically after successful `@evidence`
+scenarios during the verified run described above. They are also attached to
+the generated Cucumber report. API-only scenarios are evidenced by the report
+and response assertions because they do not have a meaningful browser screen.
+
+| Successful scenario | Evidence |
+|---|---|
+| Create table tournament | ![Created table tournament](docs/evidence/create-a-table-tournament-with-its-configured-points.png) |
+| Required tournament name | ![Required-name browser validation](docs/evidence/a-tournament-cannot-be-created-without-a-name.png) |
+| Prevent rating self-match | ![Rating self-match prevention](docs/evidence/a-rating-contestant-cannot-play-against-themselves.png) |
+| Table winner and standings | ![Winner and updated table standings](docs/evidence/a-table-winner-receives-the-configured-points.png) |
+| Duplicate score protection | ![Already-recorded match after duplicate rejection](docs/evidence/a-decided-table-match-cannot-be-scored-twice.png) |
+| Knockout progression | ![Knockout semifinal winners progressed](docs/evidence/knockout-semifinal-winners-progress-to-the-final.png) |
+| Tennis minimum boundary | ![Tennis score below schema minimum rejected](docs/evidence/tennis-score-values-below-the-schema-minimum-are-rejected.png) |
+
+Screenshots demonstrate visible outcomes; pass/fail authority remains with the
+automated assertions across UI, API and MySQL rather than image inspection.
+
+## 13. Priority improvements delivered and remaining
 
 The requested review priorities were applied as follows. Each item distinguishes
 completed evidence from intentionally remaining scope.
@@ -473,7 +493,7 @@ The summary near the top states:
 
 This lets a busy reviewer understand the value of the submission quickly.
 
-## 13. Definition of done
+## 14. Definition of done
 
 A scenario is considered complete only when:
 

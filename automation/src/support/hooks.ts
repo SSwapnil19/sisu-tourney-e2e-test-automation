@@ -42,13 +42,22 @@ Before(async function (this: TestWorld) {
 });
 
 After(async function (this: TestWorld, scenario) {
+  const scenarioSlug = scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const capturesEvidence = scenario.pickle.tags.some(({ name }) => name === "@evidence");
+
   if (scenario.result?.status === Status.FAILED && this.page) {
     await this.attach(await this.page.screenshot({ fullPage: true }), "image/png");
     await mkdir("reports/traces", { recursive: true });
-    const tracePath = `reports/traces/${scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.zip`;
+    const tracePath = `reports/traces/${scenarioSlug}.zip`;
     await this.context.tracing.stop({ path: tracePath });
     await this.attach(`Playwright trace: ${tracePath}`, "text/plain");
   } else if (this.context) {
+    if (capturesEvidence && this.page) {
+      await mkdir("docs/evidence", { recursive: true });
+      const evidencePath = `docs/evidence/${scenarioSlug}.png`;
+      const screenshot = await this.page.screenshot({ path: evidencePath, fullPage: true });
+      await this.attach(screenshot, "image/png");
+    }
     await this.context.tracing.stop();
   }
 
