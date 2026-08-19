@@ -1,11 +1,11 @@
-import { environment } from "../config/environment.js";
-
 export type ApiResult<T = unknown> = {
   status: number;
   body: T | null;
 };
 
 export class ApiService {
+  constructor(private readonly baseUrl: string) {}
+
   async get(path: string): Promise<ApiResult> {
     return this.request(path);
   }
@@ -18,7 +18,7 @@ export class ApiService {
   }
 
   private async request(path: string, options: RequestInit = {}): Promise<ApiResult> {
-    const response = await fetch(`${environment.apiUrl}${path}`, {
+    const response = await fetch(`${this.baseUrl}${path}`, {
       headers: { "Content-Type": "application/json" },
       ...options,
     });

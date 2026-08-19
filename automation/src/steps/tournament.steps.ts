@@ -1,51 +1,60 @@
 import assert from "node:assert/strict";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { buildTournamentData } from "../data/tournament-data.js";
+import {
+  DEFAULT_TABLE_POINTS,
+  TENNIS_SCORES,
+  tennisScorePayload,
+  type TablePoints,
+} from "../data/test-values.js";
+import type { TournamentFormat } from "../pages/configuration.page.js";
+import type { TournamentRecord } from "../services/database.service.js";
 import type { TestWorld } from "../support/world.js";
+
+async function createTournament(
+  world: TestWorld,
+  format: TournamentFormat,
+  points: TablePoints = DEFAULT_TABLE_POINTS,
+): Promise<TournamentRecord> {
+  assert.ok(world.data, "Tournament test data was not initialized");
+  await world.workflow.create(world.data, format, points);
+  const tournament = await world.database.findTournament(world.data.name);
+  assert.ok(tournament, `${format} tournament ${world.data.name} was not created`);
+  world.tournamentId = tournament.id;
+  if (format === "table") world.tablePoints = points;
+  return tournament;
+}
 
 Given("I have unique tournament test data", function (this: TestWorld) {
   this.data = buildTournamentData();
 });
 
 Given("a rating tournament exists with 4 contestants", async function (this: TestWorld) {
-  assert.ok(this.data);
-  await this.workflow.create(this.data, "rating");
-  const tournament = await this.database.findTournament(this.data.name);
-  assert.ok(tournament);
+  const tournament = await createTournament(this, "rating");
   this.initialMatchCount = await this.database.matchCount(tournament.id);
 });
 
 Given("a table tournament exists with 4 contestants", async function (this: TestWorld) {
-  assert.ok(this.data);
-  await this.workflow.create(this.data, "table");
-  const tournament = await this.database.findTournament(this.data.name);
-  assert.ok(tournament, `Table tournament ${this.data.name} was not created`);
-  this.tournamentId = tournament.id;
+  await createTournament(this, "table");
 });
 
 Given("a table match has already been scored", async function (this: TestWorld) {
+  const tournament = await createTournament(this, "table");
   assert.ok(this.data);
-  await this.workflow.create(this.data, "table");
-  const tournament = await this.database.findTournament(this.data.name);
-  assert.ok(tournament, `Table tournament ${this.data.name} was not created`);
-  this.tournamentId = tournament.id;
   this.matchId = await this.workflow.scoreFirstMatch(this.data);
   this.standingsBefore = await this.database.standings(tournament.id);
 });
 
 Given("a knockout tournament exists with 4 contestants", async function (this: TestWorld) {
-  assert.ok(this.data);
-  await this.workflow.create(this.data, "knockout");
-  const tournament = await this.database.findTournament(this.data.name);
-  assert.ok(tournament, `Knockout tournament ${this.data.name} was not created`);
-  this.tournamentId = tournament.id;
+  await createTournament(this, "knockout");
 });
 
 When(
   "I create a table tournament with 4 contestants and points {int}, {int}, {int}",
   async function (this: TestWorld, win: number, draw: number, loss: number) {
     assert.ok(this.data);
-    await this.workflow.create(this.data, "table", { win, draw, loss });
+    this.tablePoints = { win, draw, loss };
+    await this.workflow.create(this.data, "table", this.tablePoints);
   },
 );
 
@@ -55,7 +64,7 @@ When("I try to create a table tournament without a name", async function (this: 
   await this.configuration.createTournament({
     format: "table",
     contestants: this.data.contestants,
-    points: { win: 3, draw: 1, loss: 0 },
+    points: DEFAULT_TABLE_POINTS,
   });
 });
 
@@ -71,9 +80,10 @@ When("I submit a valid winning score for the first pending match", async functio
 
 When("I submit a second score for the decided match through the API", async function (this: TestWorld) {
   assert.ok(this.matchId);
-  this.apiResult = await this.api.submitScore(this.matchId, {
-    sets: [{ A: 0, B: 6 }, { A: 0, B: 6 }],
-  });
+  this.apiResult = await this.api.submitScore(
+    this.matchId,
+    tennisScorePayload(TENNIS_SCORES.playerBWins),
+  );
 });
 
 When("I score both semifinal matches", async function (this: TestWorld) {
@@ -94,7 +104,8 @@ Then("the tournament is shown in the configuration application", async function 
 
 Then("the tournament and its 4 contestants are stored correctly", async function (this: TestWorld) {
   assert.ok(this.data);
-  this.tournamentId = await this.verifier.tableTournamentIsPersisted(this.data);
+  assert.ok(this.tablePoints);
+  this.tournamentId = await this.verifier.tableTournamentIsPersisted(this.data, this.tablePoints);
 });
 
 Then("table matches are generated for the tournament", async function (this: TestWorld) {
@@ -124,14 +135,12 @@ Then("no new rating match is stored", async function (this: TestWorld) {
 
 Then("the score and winner are stored correctly", async function (this: TestWorld) {
   assert.ok(this.matchId);
-  const match = await this.database.match(this.matchId);
-  assert.ok(match?.score_json, `Score JSON was not stored for match ${this.matchId}`);
-  assert.equal(match.outcome.toUpperCase(), "A", `Expected contestant A to win match ${this.matchId}`);
+  await this.verifier.scoreAndWinnerAreStored(this.matchId);
 });
 
 Then("the table standings are updated exactly once in the UI and database", async function (this: TestWorld) {
-  assert.ok(this.tournamentId && this.matchId);
-  await this.verifier.tableScoreUpdatedOnce(this.tournamentId, this.matchId);
+  assert.ok(this.tournamentId && this.tablePoints);
+  await this.verifier.tableStandingsUpdatedOnce(this.tournamentId, this.tablePoints);
 });
 
 Then("the API rejects the duplicate score with conflict status", function (this: TestWorld) {

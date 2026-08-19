@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { TENNIS_SCORES, type TennisSet } from "../data/test-values.js";
 
 export class MatchEntryPage {
   constructor(private readonly page: Page, private readonly baseUrl: string) {}
@@ -10,14 +11,13 @@ export class MatchEntryPage {
   }
 
   async selectTournament(name: string): Promise<void> {
-    await this.page.locator(".panel .field").filter({ hasText: "Select tournament" })
-      .locator("select").selectOption({ label: name });
+    await this.selectField("Select tournament").selectOption({ label: name });
     await expect(this.matchSelect()).toBeVisible();
   }
 
   async scoreFirstPendingTennisMatch(): Promise<string> {
     const matchId = await this.selectFirstPendingMatch();
-    await this.fillTennisScore([[6, 0], [6, 0]]);
+    await this.fillTennisScore(TENNIS_SCORES.playerAWins);
     const scoreResponse = this.page.waitForResponse((response) =>
       response.request().method() === "POST"
       && response.url().includes(`/matches/${matchId}/score`),
@@ -32,7 +32,7 @@ export class MatchEntryPage {
 
   async enterInvalidTennisScore(): Promise<string> {
     const matchId = await this.selectFirstPendingMatch();
-    await this.fillTennisScore([[-1, 0], [6, 0]]);
+    await this.fillTennisScore(TENNIS_SCORES.belowMinimum);
     await this.page.getByRole("button", { name: "Submit score" }).click();
     return matchId;
   }
@@ -67,7 +67,7 @@ export class MatchEntryPage {
   }
 
   private matchSelect() {
-    return this.page.locator(".panel .field").filter({ hasText: "Select match" }).locator("select");
+    return this.selectField("Select match");
   }
 
   private async selectFirstPendingMatch(): Promise<string> {
@@ -84,7 +84,7 @@ export class MatchEntryPage {
     return this.page.locator("form.panel table.scoreboard tbody input");
   }
 
-  private async fillTennisScore(sets: Array<[number, number]>): Promise<void> {
+  private async fillTennisScore(sets: readonly TennisSet[]): Promise<void> {
     const inputs = this.scoreInputs();
     for (const [setIndex, [scoreA, scoreB]] of sets.entries()) {
       await inputs.nth(setIndex * 2).fill(String(scoreA));
@@ -93,6 +93,10 @@ export class MatchEntryPage {
   }
 
   private playerSelect(label: string) {
-    return this.page.locator("form.panel .field").filter({ hasText: label }).locator("select");
+    return this.selectField(label, "form.panel .field");
+  }
+
+  private selectField(label: string, container = ".panel .field") {
+    return this.page.locator(container).filter({ hasText: label }).locator("select");
   }
 }

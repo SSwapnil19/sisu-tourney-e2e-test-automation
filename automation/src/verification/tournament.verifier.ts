@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { expect } from "@playwright/test";
 import type { TournamentTestData } from "../data/tournament-data.js";
+import type { TablePoints } from "../data/test-values.js";
 import type { ConfigurationPage } from "../pages/configuration.page.js";
 import type { MatchEntryPage } from "../pages/match-entry.page.js";
 import type { DatabaseService } from "../services/database.service.js";
@@ -16,13 +17,13 @@ export class TournamentVerifier {
     await expect(this.configuration.tournamentRow(name)).toBeVisible();
   }
 
-  async tableTournamentIsPersisted(data: TournamentTestData): Promise<string> {
+  async tableTournamentIsPersisted(data: TournamentTestData, points: TablePoints): Promise<string> {
     const tournament = await this.database.findTournament(data.name);
     assert.ok(tournament, `Tournament ${data.name} was not stored`);
     assert.equal(tournament.format.toLowerCase(), "table");
     assert.deepEqual(
       [Number(tournament.points_win), Number(tournament.points_draw), Number(tournament.points_loss)],
-      [3, 1, 0],
+      [points.win, points.draw, points.loss],
     );
     assert.deepEqual(
       await this.database.contestantNames(tournament.id),
@@ -44,12 +45,14 @@ export class TournamentVerifier {
     await expect(this.matchEntry.createMatchButton()).toBeDisabled();
   }
 
-  async tableScoreUpdatedOnce(tournamentId: string, matchId: string): Promise<void> {
+  async scoreAndWinnerAreStored(matchId: string): Promise<void> {
     const match = await this.database.match(matchId);
     assert.ok(match, `Scored match ${matchId} was not stored`);
     assert.equal(match.outcome.toUpperCase(), "A", `Expected contestant A to win match ${matchId}`);
     assert.ok(match.score_json, `Expected match ${matchId} to contain score JSON`);
+  }
 
+  async tableStandingsUpdatedOnce(tournamentId: string, points: TablePoints): Promise<void> {
     const standings = await this.database.standings(tournamentId);
     const winner = standings.find((row) => row.won === 1);
     const loser = standings.find((row) => row.lost === 1);
@@ -57,15 +60,15 @@ export class TournamentVerifier {
     assert.ok(loser, "No table loser was recorded in standings");
     assert.deepEqual(
       [winner.played, winner.won, winner.points],
-      [1, 1, 3],
+      [1, 1, points.win],
       `Incorrect winner standings for ${winner.name}`,
     );
     assert.deepEqual(
       [loser.played, loser.lost, loser.points],
-      [1, 1, 0],
+      [1, 1, points.loss],
       `Incorrect loser standings for ${loser.name}`,
     );
-    await expect(this.matchEntry.standingsRow(winner.name)).toContainText("3");
+    await expect(this.matchEntry.standingsRow(winner.name)).toContainText(String(points.win));
   }
 
   async matchRemainsPending(matchId: string): Promise<void> {

@@ -1,4 +1,5 @@
 import type { TournamentTestData } from "../data/tournament-data.js";
+import { DEFAULT_TABLE_POINTS, TENNIS_SPORT, type TablePoints } from "../data/test-values.js";
 import type { ConfigurationPage, TournamentFormat } from "../pages/configuration.page.js";
 import type { MatchEntryPage } from "../pages/match-entry.page.js";
 
@@ -11,12 +12,12 @@ export class TournamentWorkflow {
   async create(
     data: TournamentTestData,
     format: TournamentFormat,
-    points = { win: 3, draw: 1, loss: 0 },
+    points: TablePoints = DEFAULT_TABLE_POINTS,
   ): Promise<void> {
     await this.configuration.open();
     await this.configuration.createTournament({
       name: data.name,
-      sport: "Tennis",
+      sport: TENNIS_SPORT,
       format,
       contestants: data.contestants,
       points,
@@ -30,14 +31,17 @@ export class TournamentWorkflow {
   }
 
   async scoreFirstMatch(data: TournamentTestData): Promise<string> {
-    await this.matchEntry.open();
-    await this.matchEntry.selectTournament(data.name);
+    await this.openMatchEntry(data.name);
     return this.matchEntry.scoreFirstPendingTennisMatch();
   }
 
   async submitInvalidScore(data: TournamentTestData): Promise<string> {
-    await this.matchEntry.open();
-    await this.matchEntry.selectTournament(data.name);
+    await this.openMatchEntry(data.name);
     return this.matchEntry.enterInvalidTennisScore();
+  }
+
+  private async openMatchEntry(tournamentName: string): Promise<void> {
+    await this.matchEntry.open();
+    await this.matchEntry.selectTournament(tournamentName);
   }
 }

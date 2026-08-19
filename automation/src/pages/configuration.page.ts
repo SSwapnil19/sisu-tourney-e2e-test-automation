@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import type { TablePoints } from "../data/test-values.js";
 
 export type TournamentFormat = "table" | "rating" | "knockout";
 
@@ -16,7 +17,7 @@ export class ConfigurationPage {
     sport?: string;
     format: TournamentFormat;
     contestants: string[];
-    points?: { win: number; draw: number; loss: number };
+    points?: TablePoints;
   }): Promise<void> {
     if (input.name !== undefined) {
       await this.field("Tournament name").locator("input").fill(input.name);
@@ -60,6 +61,6 @@ export class ConfigurationPage {
   }
 
   private numberField(label: string) {
-    return this.page.locator(".field").filter({ hasText: label }).locator('input[type="number"]');
+    return this.field(label).locator('input[type="number"]');
   }
 }

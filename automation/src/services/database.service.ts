@@ -1,5 +1,6 @@
 import mysql, { type Pool, type RowDataPacket } from "mysql2/promise";
 import { environment } from "../config/environment.js";
+import { TEST_DATA_PREFIX } from "../data/test-values.js";
 
 export type TournamentRecord = RowDataPacket & {
   id: string;
@@ -103,7 +104,7 @@ export class DatabaseService {
 
   async cleanupTournament(name: string): Promise<void> {
     const tournament = await this.findTournament(name);
-    if (!tournament || !name.startsWith("SDET-")) return;
+    if (!tournament || !name.startsWith(TEST_DATA_PREFIX)) return;
 
     const connection = await this.connection().getConnection();
     try {

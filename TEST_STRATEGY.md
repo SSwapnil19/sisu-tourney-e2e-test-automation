@@ -391,10 +391,11 @@ override. Neither condition required a product-code change.
 
 ## 12. Successful scenario demo
 
-The screenshots below were captured automatically after successful `@evidence`
-scenarios during the verified run described above. They are also attached to
-the generated Cucumber report. API-only scenarios are evidenced by the report
-and response assertions because they do not have a meaningful browser screen.
+The committed screenshots below are examples from the verified run described
+above. Current `@evidence` scenarios write screenshots to `reports/evidence`
+and attach them to the generated Cucumber report, without modifying tracked
+files. API-only scenarios are evidenced by the report and response assertions
+because they do not have a meaningful browser screen.
 
 | Successful scenario | Evidence |
 |---|---|

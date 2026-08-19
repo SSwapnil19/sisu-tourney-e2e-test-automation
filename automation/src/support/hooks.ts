@@ -24,10 +24,10 @@ const browsers: Record<string, BrowserType> = { chromium, firefox, webkit };
 
 Before(async function (this: TestWorld, scenario) {
   console.log(`\n[SCENARIO START] ${scenario.pickle.name}`);
-  const scenarioSlug = scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  this.artifactSlug = scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   await mkdir("reports/network", { recursive: true });
   await mkdir("reports/videos", { recursive: true });
-  this.networkPath = `reports/network/${scenarioSlug}.har`;
+  this.networkPath = `reports/network/${this.artifactSlug}.har`;
 
   this.application = new ApplicationService(
     environment.apiUrl,
@@ -57,7 +57,7 @@ Before(async function (this: TestWorld, scenario) {
   this.page.setDefaultTimeout(environment.timeoutMs);
 
   this.database = new DatabaseService();
-  this.api = new ApiService();
+  this.api = new ApiService(environment.apiUrl);
   await this.database.connect();
   this.configuration = new ConfigurationPage(this.page, environment.configUiUrl);
   this.matchEntry = new MatchEntryPage(this.page, environment.userUiUrl);
@@ -81,53 +81,55 @@ AfterStep(function (this: TestWorld, { pickleStep, result }) {
 });
 
 After(async function (this: TestWorld, scenario) {
-  const scenarioSlug = scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const scenarioSlug = this.artifactSlug ?? "unknown-scenario";
   const capturesEvidence = scenario.pickle.tags.some(({ name }) => name === "@evidence");
   const failed = scenario.result?.status === Status.FAILED;
   const video = this.page?.video();
   const browser = this.context?.browser();
 
-  if (failed && this.page) {
-    await this.attach(await this.page.screenshot({ fullPage: true }), "image/png");
-    await mkdir("reports/traces", { recursive: true });
-    const tracePath = `reports/traces/${scenarioSlug}.zip`;
-    await this.context.tracing.stop({ path: tracePath });
-    await this.attach(`Playwright trace: ${tracePath}`, "text/plain");
-  } else if (this.context) {
-    if (capturesEvidence && this.page) {
-      await mkdir("docs/evidence", { recursive: true });
-      const evidencePath = `docs/evidence/${scenarioSlug}.png`;
-      const screenshot = await this.page.screenshot({ path: evidencePath, fullPage: true });
-      await this.attach(screenshot, "image/png");
-    }
-    await this.context.tracing.stop();
-  }
-
   try {
-    if (this.data) await this.database?.cleanupTournament(this.data.name);
-    await this.database?.disconnect();
+    if (failed && this.page) {
+      await this.attach(await this.page.screenshot({ fullPage: true }), "image/png");
+      await mkdir("reports/traces", { recursive: true });
+      const tracePath = `reports/traces/${scenarioSlug}.zip`;
+      await this.context.tracing.stop({ path: tracePath });
+      await this.attach(`Playwright trace: ${tracePath}`, "text/plain");
+    } else if (this.context) {
+      if (capturesEvidence && this.page) {
+        await mkdir("reports/evidence", { recursive: true });
+        const evidencePath = `reports/evidence/${scenarioSlug}.png`;
+        const screenshot = await this.page.screenshot({ path: evidencePath, fullPage: true });
+        await this.attach(screenshot, "image/png");
+      }
+      await this.context.tracing.stop();
+    }
   } finally {
-    await this.context?.close();
+    try {
+      if (this.data) await this.database?.cleanupTournament(this.data.name);
+      await this.database?.disconnect();
+    } finally {
+      await this.context?.close();
 
-    if (video) {
-      if (failed) {
-        await this.attach(`Playwright video: ${await video.path()}`, "text/plain");
-      } else {
-        await video.delete();
+      if (video) {
+        if (failed) {
+          await this.attach(`Playwright video: ${await video.path()}`, "text/plain");
+        } else {
+          await video.delete();
+        }
       }
-    }
 
-    if (this.networkPath) {
-      if (failed) {
-        await this.attach(`Network HAR: ${this.networkPath}`, "text/plain");
-      } else {
-        await unlink(this.networkPath).catch((error: NodeJS.ErrnoException) => {
-          if (error.code !== "ENOENT") throw error;
-        });
+      if (this.networkPath) {
+        if (failed) {
+          await this.attach(`Network HAR: ${this.networkPath}`, "text/plain");
+        } else {
+          await unlink(this.networkPath).catch((error: NodeJS.ErrnoException) => {
+            if (error.code !== "ENOENT") throw error;
+          });
+        }
       }
-    }
 
-    await browser?.close();
+      await browser?.close();
+    }
   }
   console.log(`[SCENARIO ${scenario.result?.status ?? Status.UNKNOWN}] ${scenario.pickle.name}`);
 });
