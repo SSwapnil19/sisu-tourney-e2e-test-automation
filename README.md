@@ -112,3 +112,4 @@ migration step for you to run.
 - Source for the `api` service. It's a pre-built, compiled binary. Treat it
   as a black box: understand its behaviour through the UI, its HTTP
   responses, and the database — not by reading its code.
+# sisu-tourney-test-automation
