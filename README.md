@@ -41,7 +41,9 @@ Run only the fast end-to-end smoke scenario with `npm run test:smoke`. Set
 `HEADLESS=false` in `.env` or use `npm run test:headed` when debugging.
 
 Reports are generated under `reports/` in HTML, JSON and JUnit formats. A
-full-page screenshot and Playwright trace are captured when a scenario fails.
+full-page screenshot, Playwright trace, browser video and HAR network file are
+retained when a scenario fails; successful scenarios discard temporary video
+and network recordings.
 Local credentials belong in `.env`; only the safe template is committed.
 
 See [TEST_STRATEGY.md](TEST_STRATEGY.md) for scope, design decisions and known

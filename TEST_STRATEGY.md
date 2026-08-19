@@ -358,7 +358,13 @@ Each run creates:
 - `reports/cucumber-report.html` for reviewer-friendly results.
 - `reports/cucumber-report.json` for result processing.
 - `reports/cucumber-report.xml` for CI systems.
-- A full-page screenshot and Playwright trace attached to a failed scenario.
+- A full-page screenshot, Playwright trace, browser video and HAR network file
+  retained for a failed scenario.
+
+Video and HAR recording starts with each browser context because failures are
+not known in advance. Successful scenarios delete those temporary recordings;
+failed artifacts remain under `reports/videos`, `reports/network` and
+`reports/traces` and their paths are attached to the Cucumber report.
 
 When a test fails, investigation follows the same system boundary as the user
 journey:

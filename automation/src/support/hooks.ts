@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, unlink } from "node:fs/promises";
 import {
   After,
   AfterStep,
@@ -24,6 +24,11 @@ const browsers: Record<string, BrowserType> = { chromium, firefox, webkit };
 
 Before(async function (this: TestWorld, scenario) {
   console.log(`\n[SCENARIO START] ${scenario.pickle.name}`);
+  const scenarioSlug = scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  await mkdir("reports/network", { recursive: true });
+  await mkdir("reports/videos", { recursive: true });
+  this.networkPath = `reports/network/${scenarioSlug}.har`;
+
   this.application = new ApplicationService(
     environment.apiUrl,
     environment.configUiUrl,
@@ -35,7 +40,18 @@ Before(async function (this: TestWorld, scenario) {
   if (!browserType) throw new Error(`Unsupported BROWSER: ${environment.browser}`);
 
   const browser = await browserType.launch({ headless: environment.headless });
-  this.context = await browser.newContext();
+  this.context = await browser.newContext({
+    viewport: { width: 1280, height: 720 },
+    recordHar: {
+      path: this.networkPath,
+      mode: "full",
+      content: "embed",
+    },
+    recordVideo: {
+      dir: "reports/videos",
+      size: { width: 1280, height: 720 },
+    },
+  });
   await this.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   this.page = await this.context.newPage();
   this.page.setDefaultTimeout(environment.timeoutMs);
@@ -67,8 +83,11 @@ AfterStep(function (this: TestWorld, { pickleStep, result }) {
 After(async function (this: TestWorld, scenario) {
   const scenarioSlug = scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   const capturesEvidence = scenario.pickle.tags.some(({ name }) => name === "@evidence");
+  const failed = scenario.result?.status === Status.FAILED;
+  const video = this.page?.video();
+  const browser = this.context?.browser();
 
-  if (scenario.result?.status === Status.FAILED && this.page) {
+  if (failed && this.page) {
     await this.attach(await this.page.screenshot({ fullPage: true }), "image/png");
     await mkdir("reports/traces", { recursive: true });
     const tracePath = `reports/traces/${scenarioSlug}.zip`;
@@ -84,8 +103,31 @@ After(async function (this: TestWorld, scenario) {
     await this.context.tracing.stop();
   }
 
-  if (this.data) await this.database.cleanupTournament(this.data.name);
-  await this.database?.disconnect();
-  await this.context?.browser()?.close();
+  try {
+    if (this.data) await this.database?.cleanupTournament(this.data.name);
+    await this.database?.disconnect();
+  } finally {
+    await this.context?.close();
+
+    if (video) {
+      if (failed) {
+        await this.attach(`Playwright video: ${await video.path()}`, "text/plain");
+      } else {
+        await video.delete();
+      }
+    }
+
+    if (this.networkPath) {
+      if (failed) {
+        await this.attach(`Network HAR: ${this.networkPath}`, "text/plain");
+      } else {
+        await unlink(this.networkPath).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== "ENOENT") throw error;
+        });
+      }
+    }
+
+    await browser?.close();
+  }
   console.log(`[SCENARIO ${scenario.result?.status ?? Status.UNKNOWN}] ${scenario.pickle.name}`);
 });

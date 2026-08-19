@@ -27,6 +27,7 @@ export class TestWorld extends World {
   apiResult?: ApiResult;
   standingsBefore?: StandingRecord[];
   stepStartedAt?: number;
+  networkPath?: string;
 
   constructor(options: IWorldOptions) {
     super(options);
