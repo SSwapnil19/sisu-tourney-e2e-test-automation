@@ -1,0 +1,22 @@
+{
+  "name": "tourney-system-acceptance-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js",
+    "test:smoke": "node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js --tags '@smoke'",
+    "test:headed": "HEADLESS=false node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js",
+    "typecheck": "tsc --noEmit",
+    "report": "node scripts/report-summary.mjs"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^11.3.0",
+    "@playwright/test": "1.60.0",
+    "@types/node": "^22.17.2",
+    "dotenv": "^17.2.1",
+    "mysql2": "^3.14.3",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
+  }
+}
