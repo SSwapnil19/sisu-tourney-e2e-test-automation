@@ -373,7 +373,107 @@ machine also had an unrelated MySQL server on host port 3306, so the assessment
 database was exposed locally on port 3307 through an uncommitted Compose
 override. Neither condition required a product-code change.
 
-## 12. Definition of done
+## 12. Most important areas for improvement
+
+The current solution provides a reliable framework and three passing scenarios,
+but the following improvements would provide stronger evidence for a senior
+SDET assessment. They are listed in recommended implementation order.
+
+### 1. Automate table scoring and standings
+
+The suite creates table tournaments but does not yet prove the main table
+business outcome. Add a scenario that submits a valid match score and verifies:
+
+- The raw score and outcome stored in `matches`.
+- Played, won and lost counts.
+- Configured win/loss points rather than hard-coded `3/0` values.
+- Agreement between UI standings and MySQL standings.
+
+This is the highest-value missing user journey.
+
+### 2. Protect against duplicate score processing
+
+Add a scenario that submits a result twice and proves:
+
+- The first result succeeds.
+- The second submission is rejected as a conflict.
+- The original score remains unchanged.
+- Standings, ratings or knockout progression update only once.
+
+This directly covers repeated actions, retries and data integrity.
+
+### 3. Automate knockout progression
+
+Add a four-contestant knockout scenario that verifies the first-round winner is
+placed in the correct next-round match and the loser does not progress. After
+the basic flow is reliable, investigate non-power-of-two contestant counts and
+automatic byes.
+
+### 4. Add score-schema boundary coverage
+
+Exercise the schema-driven form using minimum, maximum, below-minimum,
+above-maximum and incomplete scores. Rejected input must leave the match pending
+and must not cause standings, rating or bracket changes.
+
+### 5. Add focused API contract tests
+
+The current application readiness check uses `/health`, but business API errors
+are not automated. Add focused checks for:
+
+- Unknown tournament and match IDs (`404`).
+- Already-decided matches (`409`).
+- Rejected score payloads (`422`).
+- Rating-match creation, which is used by the UI but absent from OpenAPI.
+
+API checks should complement the end-user journeys rather than replace them.
+
+### 6. Add continuous integration
+
+Create a CI workflow that installs dependencies, starts the Docker application,
+waits for health, runs type checking and tests, uploads reports, and always
+stops the environment. If the supplied API archive cannot be stored in hosted
+CI, document a self-hosted runner or secure image-registry prerequisite.
+
+### 7. Verify cleanup against every related table
+
+The live schema also contains `standings`. Before score tests are added, inspect
+its foreign keys and confirm whether transactional cleanup must delete standings
+explicitly or whether database cascades are sufficient. Cleanup must remain
+restricted to scenario-owned `SDET-` records.
+
+### 8. Strengthen failure diagnostics
+
+Retain screenshots and add Playwright traces for failed scenarios where useful.
+Failure messages should describe the incorrect business result, and the test
+command should be confirmed to return a non-zero exit code whenever any
+scenario fails.
+
+### 9. Record findings separately from confirmed defects
+
+Add a concise findings table covering:
+
+- UI knockout-size guidance versus OpenAPI bye support.
+- The rating-match endpoint missing from OpenAPI.
+- The supplied ARM64 API image running on an Intel host through emulation.
+
+Each entry should distinguish observed evidence, business impact, assumption
+and clarification required. An ambiguity should not be labelled a defect until
+the intended behaviour is confirmed.
+
+### 10. Keep the reviewer summary concise
+
+Maintain this detailed strategy as engineering evidence, but place a short
+executive summary near the top of the submission stating:
+
+- What is automated.
+- Why those scenarios were selected.
+- What passed.
+- Important findings.
+- What would be implemented next.
+
+This lets a busy reviewer understand the value of the submission quickly.
+
+## 13. Definition of done
 
 A scenario is considered complete only when:
 
