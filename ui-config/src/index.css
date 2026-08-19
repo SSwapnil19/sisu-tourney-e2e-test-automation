@@ -1,0 +1,268 @@
+:root {
+  --bg: #0f1854;
+  --bg-raised: rgba(255, 255, 255, 0.06);
+  --bg-raised-hover: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #ffffff;
+  --text-muted: #94a3b8;
+  --accent-cta: #55d8ff;
+  --accent-cta-text: #012d5e;
+  --accent-live: #e22a76;
+  --accent-win: #94fbab;
+  --accent-win-text: #013a1f;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+
+  --sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+
+  font: 16px/1.5 var(--sans);
+  color-scheme: dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+#root {
+  min-height: 100svh;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+  box-sizing: border-box;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.lang-switcher label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 16px;
+}
+
+select,
+input[type="text"],
+input[type="number"] {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 9px 11px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+select:focus,
+input:focus {
+  outline: none;
+  border-color: var(--accent-cta);
+  box-shadow: 0 0 0 3px rgba(85, 216, 255, 0.25);
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
+
+.panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.field-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.field-row > .field {
+  flex: 1;
+  min-width: 180px;
+}
+
+fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 18px;
+}
+
+fieldset legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.contestants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 18px;
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--accent-live);
+  color: #fff;
+}
+
+.count-badge.valid {
+  background: var(--accent-win);
+  color: var(--accent-win-text);
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  border: none;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent-cta);
+  color: var(--accent-cta-text);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.error-banner {
+  background: rgba(226, 42, 118, 0.14);
+  border-left: 3px solid var(--accent-live);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin: 0 0 20px;
+}
+
+.tournament-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tournament-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tournament-row:last-child {
+  border-bottom: none;
+}
+
+.tournament-row .name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.tournament-row .count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.badge-knockout {
+  background: var(--accent-live);
+  color: #fff;
+}
+
+.badge-table {
+  background: var(--accent-cta);
+  color: var(--accent-cta-text);
+}
+
+.badge-rating {
+  background: var(--accent-win);
+  color: var(--accent-win-text);
+}

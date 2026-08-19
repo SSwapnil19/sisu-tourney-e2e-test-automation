@@ -1,0 +1,65 @@
+version: "3.9"
+
+# This is the tester-facing compose file. Unlike the main docker-compose.yml
+# used for development, this does NOT build the `api` service — it expects
+# the `tourney-api:latest` image to already be loaded (see README.md:
+# `docker load < tourney-api-image.tar`). No API source is included in this
+# package.
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tourney
+      MYSQL_USER: tourney
+      MYSQL_PASSWORD: tourney
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    image: tourney-api:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql://tourney:tourney@mysql:3306/tourney
+      RUST_LOG: info
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  ui-config:
+    build:
+      context: ./ui-config
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+        VITE_DEFAULT_LOCALE: fr
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+
+  ui-user:
+    build:
+      context: ./ui-user
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+        VITE_DEFAULT_LOCALE: fr
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    depends_on:
+      - api
+
+volumes:
+  mysql_data:

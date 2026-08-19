@@ -1,0 +1,226 @@
+openapi: 3.0.3
+info:
+  title: Tourney API
+  version: "1.0"
+  description: >
+    Tournament management API: sports, tournaments, contestants, matches.
+    This document describes the intended contract. It is not guaranteed to
+    be perfectly in sync with the deployed implementation.
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /health:
+    get:
+      summary: Liveness check
+      responses:
+        "200":
+          description: OK
+
+  /sports:
+    get:
+      summary: List available sports
+      responses:
+        "200":
+          description: List of sports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sport"
+
+  /tournaments:
+    get:
+      summary: List all tournaments
+      responses:
+        "200":
+          description: List of tournaments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tournament"
+    post:
+      summary: Create a tournament
+      description: >
+        Creates a tournament along with its contestants. Knockout tournaments
+        support any number of contestants; if the count isn't a power of two,
+        byes are automatically assigned to the top seeds in the first round.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sport_id, name, format, contestant_names, points_win, points_draw, points_loss]
+              properties:
+                sport_id:
+                  type: string
+                name:
+                  type: string
+                format:
+                  type: string
+                  enum: [knockout, table, rating]
+                contestant_names:
+                  type: array
+                  items:
+                    type: string
+                points_win:
+                  type: integer
+                points_draw:
+                  type: integer
+                points_loss:
+                  type: integer
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+        "400":
+          description: Invalid request
+
+  /tournaments/{id}:
+    get:
+      summary: Get a tournament's full state
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tournament detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tournament:
+                    $ref: "#/components/schemas/Tournament"
+                  contestants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Contestant"
+                  matches:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Match"
+        "404":
+          description: Not found
+
+  /matches/{id}/score:
+    post:
+      summary: Submit a match result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score]
+              properties:
+                score:
+                  type: object
+                  description: >
+                    Shape depends on the sport's score-entry schema — e.g.
+                    `{"sets": [...]}` for tennis, `{"holes": [...]}` for golf.
+      responses:
+        "200":
+          description: Result recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcome:
+                    type: string
+                    enum: [win, loss, tie]
+                  detail:
+                    type: object
+        "404":
+          description: Match not found
+        "409":
+          description: Match already has a recorded result
+        "422":
+          description: Scorer rejected the submitted score
+
+components:
+  schemas:
+    Sport:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        score_entry_schema:
+          type: object
+
+    Tournament:
+      type: object
+      properties:
+        id:
+          type: string
+        sport_id:
+          type: string
+        name:
+          type: string
+        format:
+          type: string
+        contestant_count:
+          type: integer
+        points_win:
+          type: integer
+        points_draw:
+          type: integer
+        points_loss:
+          type: integer
+
+    Contestant:
+      type: object
+      properties:
+        id:
+          type: string
+        tournament_id:
+          type: string
+        name:
+          type: string
+        seed:
+          type: integer
+          nullable: true
+        rating:
+          type: number
+
+    Match:
+      type: object
+      properties:
+        id:
+          type: string
+        tournament_id:
+          type: string
+        round:
+          type: integer
+        contestant_a_id:
+          type: string
+        contestant_b_id:
+          type: string
+        score_json:
+          type: object
+          nullable: true
+        outcome:
+          type: string
+          enum: [pending, win, loss, tie]
