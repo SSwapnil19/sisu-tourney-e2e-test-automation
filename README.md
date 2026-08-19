@@ -3,6 +3,44 @@
 A tournament management system: sports, tournaments (knockout / table /
 rating formats), contestants, and match scoring.
 
+## Automated acceptance tests
+
+The added suite uses TypeScript, Playwright, Cucumber and MySQL. It follows a
+deliberate dependency direction:
+
+```text
+Test -> Fixtures -> Workflow -> Page Objects -> Verification
+                         \-> Data / Services -> Application -> Report
+```
+
+The compact suite covers:
+
+- table tournament creation with UI and database verification;
+- required-name validation with a database no-write assertion;
+- prevention of self-matches in rating tournaments.
+
+### Install and run
+
+After starting the application with the Docker commands below:
+
+```bash
+cp .env.example .env
+npm install
+npx playwright install chromium
+npm run typecheck
+npm test
+```
+
+Run only the fast end-to-end smoke scenario with `npm run test:smoke`. Set
+`HEADLESS=false` in `.env` or use `npm run test:headed` when debugging.
+
+Reports are generated under `reports/` in HTML, JSON and JUnit formats. A
+full-page screenshot is embedded in the Cucumber report when a scenario fails.
+Local credentials belong in `.env`; only the safe template is committed.
+
+See [TEST_STRATEGY.md](TEST_STRATEGY.md) for scope, design decisions and known
+limitations.
+
 ## Prerequisites
 
 - Docker + Docker Compose v2 (`docker compose`, not the old standalone
