@@ -8,6 +8,8 @@ export type TennisSet = readonly [scoreA: number, scoreB: number];
 
 export const TEST_DATA_PREFIX = "SDET-";
 export const TENNIS_SPORT = "Tennis";
+export const GOLF_SPORT = "Golf";
+export const GOLF_HOLE_COUNT = 18;
 export const DEFAULT_TABLE_POINTS: TablePoints = { win: 3, draw: 1, loss: 0 };
 
 export const TENNIS_SCORES = {
@@ -15,6 +17,11 @@ export const TENNIS_SCORES = {
   playerBWins: [[0, 6], [0, 6]],
   belowMinimum: [[-1, 0], [6, 0]],
 } as const satisfies Record<string, readonly TennisSet[]>;
+
+export const GOLF_SCORES = {
+  playerA: 3,
+  playerB: 4,
+} as const;
 
 export function tennisScorePayload(sets: readonly TennisSet[]) {
   return { sets: sets.map(([A, B]) => ({ A, B })) };

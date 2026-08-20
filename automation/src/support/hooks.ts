@@ -1,4 +1,4 @@
-import { mkdir, unlink } from "node:fs/promises";
+import { access, mkdir, unlink } from "node:fs/promises";
 import {
   After,
   AfterStep,
@@ -22,6 +22,10 @@ setDefaultTimeout(environment.timeoutMs);
 
 const browsers: Record<string, BrowserType> = { chromium, firefox, webkit };
 
+async function fileExists(path: string): Promise<boolean> {
+  return access(path).then(() => true).catch(() => false);
+}
+
 Before(async function (this: TestWorld, scenario) {
   console.log(`\n[SCENARIO START] ${scenario.pickle.name}`);
   this.artifactSlug = scenario.pickle.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
@@ -40,6 +44,7 @@ Before(async function (this: TestWorld, scenario) {
   if (!browserType) throw new Error(`Unsupported BROWSER: ${environment.browser}`);
 
   const browser = await browserType.launch({ headless: environment.headless });
+  // Video and HAR must start with the context; successful runs delete them in teardown.
   this.context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
     recordHar: {
@@ -119,9 +124,9 @@ After(async function (this: TestWorld, scenario) {
       }
 
       if (this.networkPath) {
-        if (failed) {
+        if (failed && await fileExists(this.networkPath)) {
           await this.attach(`Network HAR: ${this.networkPath}`, "text/plain");
-        } else {
+        } else if (!failed) {
           await unlink(this.networkPath).catch((error: NodeJS.ErrnoException) => {
             if (error.code !== "ENOENT") throw error;
           });

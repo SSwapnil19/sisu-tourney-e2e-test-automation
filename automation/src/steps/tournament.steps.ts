@@ -3,6 +3,7 @@ import { Given, Then, When } from "@cucumber/cucumber";
 import { buildTournamentData } from "../data/tournament-data.js";
 import {
   DEFAULT_TABLE_POINTS,
+  GOLF_SPORT,
   TENNIS_SCORES,
   tennisScorePayload,
   type TablePoints,
@@ -15,9 +16,10 @@ async function createTournament(
   world: TestWorld,
   format: TournamentFormat,
   points: TablePoints = DEFAULT_TABLE_POINTS,
+  sport?: string,
 ): Promise<TournamentRecord> {
   assert.ok(world.data, "Tournament test data was not initialized");
-  await world.workflow.create(world.data, format, points);
+  await world.workflow.create(world.data, format, points, sport);
   const tournament = await world.database.findTournament(world.data.name);
   assert.ok(tournament, `${format} tournament ${world.data.name} was not created`);
   world.tournamentId = tournament.id;
@@ -36,6 +38,10 @@ Given("a rating tournament exists with 4 contestants", async function (this: Tes
 
 Given("a table tournament exists with 4 contestants", async function (this: TestWorld) {
   await createTournament(this, "table");
+});
+
+Given("a Golf table tournament exists with 4 contestants", async function (this: TestWorld) {
+  await createTournament(this, "table", DEFAULT_TABLE_POINTS, GOLF_SPORT);
 });
 
 Given("a table match has already been scored", async function (this: TestWorld) {
@@ -76,6 +82,11 @@ When("I choose the same contestant as both players", async function (this: TestW
 When("I submit a valid winning score for the first pending match", async function (this: TestWorld) {
   assert.ok(this.data);
   this.matchId = await this.workflow.scoreFirstMatch(this.data);
+});
+
+When("I submit a valid 18-hole Golf score", async function (this: TestWorld) {
+  assert.ok(this.data);
+  this.matchId = await this.workflow.scoreFirstGolfMatch(this.data);
 });
 
 When("I submit a second score for the decided match through the API", async function (this: TestWorld) {

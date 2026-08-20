@@ -16,11 +16,14 @@ User action in UI -> API processing -> MySQL state -> Updated user outcome
 
 ### Reviewer summary
 
-Nine focused scenarios automate the highest-risk creation, validation, table
-scoring, duplicate protection, knockout progression, score-boundary and API
-error paths. They use the UI for user behaviour, direct API calls for contract
-edges, and MySQL for independent business-state verification. All 9 scenarios
-and 38 steps pass against the supplied Docker system. Remaining priorities are
+Ten focused scenarios automate the highest-risk creation, validation, table
+scoring, Tennis and Golf score schemas, duplicate protection, knockout
+progression, score-boundary and API error paths. They use the UI for user
+behaviour, direct API calls for contract edges, and MySQL for independent
+business-state verification. The original 9 scenarios and 38 steps passed
+against Docker; the new Golf journey is type-checked and bound but still needs
+a live rerun because Docker Desktop was unavailable during this review.
+Remaining priorities are
 knockout byes, valid rating updates and language switching. Environment and
 contract observations are recorded separately in `FINDINGS.md`.
 
@@ -99,11 +102,27 @@ The assessment was approached in this order:
 This avoids two common weaknesses: tests that assert only visible UI text, and
 large suites containing many low-value variations of the same journey.
 
+### Exploration notes that changed the test plan
+
+- Both UIs opened in French, so the workflow switches language explicitly
+  before using English accessible names.
+- Tennis renders a repeating set schema, while Golf renders 18 fixed rows. A
+  Golf journey was added because another Tennis variation would not prove the
+  schema-driven form handles a genuinely different shape.
+- The UI accepts only 4, 8 or 16 knockout contestants, while OpenAPI promises
+  automatic byes for other counts. I recorded this as an ambiguity instead of
+  forcing an API-only test to represent an unsupported user journey.
+- The deployed match outcomes use `A`, `B`, `draw` and `Pending`; OpenAPI uses
+  `win`, `loss`, `tie` and `pending`. This is recorded as a documentation defect.
+- Foreign keys do not cascade through every related table, so teardown deletes
+  matches and standings before contestants and the tournament.
+
 ## 4. Ten important business scenarios
 
 Seven of the ten core business scenarios are automated. Three deliberately
 remain as visible next coverage; planned scenarios are not reported as passing.
-Two additional API `404` contract scenarios bring the executable total to nine.
+Two API `404` contract scenarios and one Golf schema journey bring the
+executable total to ten.
 
 | # | Priority | Business scenario | Status |
 |---|---|---|---|
@@ -379,9 +398,14 @@ business logic or persistence layer.
 ## 11. Execution evidence
 
 The framework was type-checked and executed against the complete Docker
-application on 20 August 2026. All nine automated scenarios and all 38 steps
-passed in 49 seconds, including live UI, API and MySQL assertions plus
+application on 20 August 2026. All nine previously automated scenarios and all
+38 steps passed in 49 seconds, including live UI, API and MySQL assertions plus
 transactional cleanup across matches, standings, contestants and tournaments.
+
+The subsequent review added an 18-hole Golf journey, bringing discovery to 10
+scenarios and 43 steps. Type checking and Cucumber dry-run passed. A live rerun
+is required before submission because Docker Desktop did not expose its daemon;
+the suite correctly failed in readiness setup before executing test steps.
 
 The supplied API image is ARM64 while the assessment machine is Intel AMD64;
 Docker Desktop emitted a platform warning and ran it through emulation. The
@@ -415,9 +439,10 @@ automated assertions across UI, API and MySQL rather than image inspection.
 The requested review priorities were applied as follows. Each item distinguishes
 completed evidence from intentionally remaining scope.
 
-### 1. Table scoring and standings — completed
+### 1. Table scoring and standings - completed
 
-The scoring scenario submits a valid Tennis result and verifies:
+The scoring journeys submit both repeating-set Tennis data and fixed-row Golf
+data, then verify:
 
 - The raw score and outcome stored in `matches`.
 - Played, won and lost counts.
@@ -426,7 +451,7 @@ The scoring scenario submits a valid Tennis result and verifies:
 
 This covers the main table-format business outcome.
 
-### 2. Duplicate score protection — completed
+### 2. Duplicate score protection - completed
 
 The duplicate scenario submits a result twice and proves:
 
@@ -437,19 +462,19 @@ The duplicate scenario submits a result twice and proves:
 
 This directly covers repeated actions, retries and data integrity.
 
-### 3. Knockout progression — completed for four contestants
+### 3. Knockout progression - completed for four contestants
 
 A four-contestant knockout scenario verifies that both first-round winners are
 the two contestants in the generated final. Non-power-of-two counts and
 automatic byes remain planned because the UI and OpenAPI disagree on support.
 
-### 4. Score-schema boundaries — partially completed
+### 4. Score-schema boundaries - partially completed
 
 The test proves the generated Tennis input exposes schema bounds `0..7`, rejects
 `-1`, and leaves the match pending without a stored score. Above-maximum and
 incomplete multi-set payloads remain focused next cases.
 
-### 5. API contract tests — completed for selected `404` and `409` paths
+### 5. API contract tests - completed for selected `404` and `409` paths
 
 The suite checks unknown tournament and match IDs (`404`) and duplicate scoring
 (`409`) while `/health` remains the readiness gate. Remaining contract cases are:
@@ -459,25 +484,25 @@ The suite checks unknown tournament and match IDs (`404`) and duplicate scoring
 
 API checks should complement the end-user journeys rather than replace them.
 
-### 6. CI integration — completed
+### 6. CI integration - completed
 
 The GitHub Actions workflow installs dependencies and Chromium, enables ARM
 emulation, starts the Docker application, waits for health, runs verification,
 uploads reports, and always stops the environment.
 
-### 7. Cleanup across related tables — completed
+### 7. Cleanup across related tables - completed
 
 Transactional teardown deletes matches, standings, contestants and then the
 tournament in foreign-key-safe order. It is restricted to scenario-owned
 `SDET-` records and runs after success or failure.
 
-### 8. Better failure diagnostics — completed
+### 8. Better failure diagnostics - completed
 
 Failed scenarios attach a full-page screenshot and retain a Playwright trace.
 Business assertions include relevant IDs and observed values, and Cucumber
 returns a non-zero exit code on failure.
 
-### 9. Findings versus confirmed defects — completed
+### 9. Findings versus confirmed defects - completed
 
 A separate `FINDINGS.md` table records:
 
@@ -488,7 +513,7 @@ A separate `FINDINGS.md` table records:
 Each entry distinguishes observed evidence, impact and classification. The
 knockout ambiguity is not labelled a product defect without clarification.
 
-### 10. Concise reviewer summary — completed
+### 10. Concise reviewer summary - completed
 
 The summary near the top states:
 

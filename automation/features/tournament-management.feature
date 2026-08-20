@@ -33,6 +33,14 @@ Feature: Tournament management
     Then the score and winner are stored correctly
     And the table standings are updated exactly once in the UI and database
 
+  @golf @scoring @database @evidence
+  Scenario: A lower 18-hole Golf score wins and updates the table
+    Given I have unique tournament test data
+    And a Golf table tournament exists with 4 contestants
+    When I submit a valid 18-hole Golf score
+    Then the score and winner are stored correctly
+    And the table standings are updated exactly once in the UI and database
+
   @scoring @integrity @api @evidence
   Scenario: A decided table match cannot be scored twice
     Given I have unique tournament test data

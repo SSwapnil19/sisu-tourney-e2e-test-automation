@@ -1,5 +1,10 @@
 import { expect, type Page } from "@playwright/test";
-import { TENNIS_SCORES, type TennisSet } from "../data/test-values.js";
+import {
+  GOLF_HOLE_COUNT,
+  GOLF_SCORES,
+  TENNIS_SCORES,
+  type TennisSet,
+} from "../data/test-values.js";
 
 export class MatchEntryPage {
   constructor(private readonly page: Page, private readonly baseUrl: string) {}
@@ -18,15 +23,15 @@ export class MatchEntryPage {
   async scoreFirstPendingTennisMatch(): Promise<string> {
     const matchId = await this.selectFirstPendingMatch();
     await this.fillTennisScore(TENNIS_SCORES.playerAWins);
-    const scoreResponse = this.page.waitForResponse((response) =>
-      response.request().method() === "POST"
-      && response.url().includes(`/matches/${matchId}/score`),
-    );
-    await this.page.getByRole("button", { name: "Submit score" }).click();
-    const response = await scoreResponse;
-    if (!response.ok()) {
-      throw new Error(`Score submission for ${matchId} failed: HTTP ${response.status()} ${await response.text()}`);
-    }
+    await this.submitScore(matchId);
+    return matchId;
+  }
+
+  async scoreFirstPendingGolfMatch(): Promise<string> {
+    const matchId = await this.selectFirstPendingMatch();
+    await expect(this.scoreInputs()).toHaveCount(GOLF_HOLE_COUNT * 2);
+    await this.fillGolfScore(GOLF_SCORES.playerA, GOLF_SCORES.playerB);
+    await this.submitScore(matchId);
     return matchId;
   }
 
@@ -89,6 +94,26 @@ export class MatchEntryPage {
     for (const [setIndex, [scoreA, scoreB]] of sets.entries()) {
       await inputs.nth(setIndex * 2).fill(String(scoreA));
       await inputs.nth(setIndex * 2 + 1).fill(String(scoreB));
+    }
+  }
+
+  private async fillGolfScore(scoreA: number, scoreB: number): Promise<void> {
+    const inputs = this.scoreInputs();
+    for (let hole = 0; hole < GOLF_HOLE_COUNT; hole += 1) {
+      await inputs.nth(hole * 2).fill(String(scoreA));
+      await inputs.nth(hole * 2 + 1).fill(String(scoreB));
+    }
+  }
+
+  private async submitScore(matchId: string): Promise<void> {
+    const scoreResponse = this.page.waitForResponse((response) =>
+      response.request().method() === "POST"
+      && response.url().includes(`/matches/${matchId}/score`),
+    );
+    await this.page.getByRole("button", { name: "Submit score" }).click();
+    const response = await scoreResponse;
+    if (!response.ok()) {
+      throw new Error(`Score submission for ${matchId} failed: HTTP ${response.status()} ${await response.text()}`);
     }
   }
 

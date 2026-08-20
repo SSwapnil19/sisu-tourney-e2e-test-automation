@@ -104,6 +104,7 @@ export class DatabaseService {
 
   async cleanupTournament(name: string): Promise<void> {
     const tournament = await this.findTournament(name);
+    // The prefix guard prevents a failed or edited scenario from deleting shared data.
     if (!tournament || !name.startsWith(TEST_DATA_PREFIX)) return;
 
     const connection = await this.connection().getConnection();

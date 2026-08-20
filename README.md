@@ -21,6 +21,7 @@ The compact suite covers:
 - table scoring, persisted outcomes and exactly-once standings updates;
 - duplicate-score conflict protection and unchanged state;
 - knockout semifinal-to-final progression;
+- Golf fixed-row score entry and table updates;
 - schema-driven Tennis score boundaries and rejected invalid input;
 - focused `404` and `409` API contract behaviour.
 
@@ -112,4 +113,3 @@ migration step for you to run.
 - Source for the `api` service. It's a pre-built, compiled binary. Treat it
   as a black box: understand its behaviour through the UI, its HTTP
   responses, and the database — not by reading its code.
-# sisu-tourney-test-automation

@@ -13,11 +13,12 @@ export class TournamentWorkflow {
     data: TournamentTestData,
     format: TournamentFormat,
     points: TablePoints = DEFAULT_TABLE_POINTS,
+    sport = TENNIS_SPORT,
   ): Promise<void> {
     await this.configuration.open();
     await this.configuration.createTournament({
       name: data.name,
-      sport: TENNIS_SPORT,
+      sport,
       format,
       contestants: data.contestants,
       points,
@@ -38,6 +39,11 @@ export class TournamentWorkflow {
   async submitInvalidScore(data: TournamentTestData): Promise<string> {
     await this.openMatchEntry(data.name);
     return this.matchEntry.enterInvalidTennisScore();
+  }
+
+  async scoreFirstGolfMatch(data: TournamentTestData): Promise<string> {
+    await this.openMatchEntry(data.name);
+    return this.matchEntry.scoreFirstPendingGolfMatch();
   }
 
   private async openMatchEntry(tournamentName: string): Promise<void> {
